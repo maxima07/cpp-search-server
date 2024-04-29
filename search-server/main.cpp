@@ -2,6 +2,7 @@
 #include <cmath>
 #include <iostream>
 #include <map>
+#include <numeric>
 #include <set>
 #include <string>
 #include <utility>
@@ -87,20 +88,20 @@ class SearchServer {
         template <typename StringContainer>
         explicit SearchServer(const StringContainer& stop_words)
             : stop_words_(MakeUniqueNonEmptyStrings(stop_words)) {
+                /*
+                if(any_of(stop_words.begin(), stop_words.end(), !IsValidWord()){
+                    throw invalid_argument("Stop words have special symbols!"s)
+                */
+     
             for (const string& stop_word : stop_words){
                 if(!IsValidWord(stop_word)){
                     throw invalid_argument("Stop words have special symbols!"s);
                 }
-            }
+            }           
         }
 
         explicit SearchServer(const string& stop_words_text)
             : SearchServer(SplitIntoWords(stop_words_text)){ // Invoke delegating constructor from string container
-            for (const string& stop_word : SplitIntoWords(stop_words_text)){
-                if(!IsValidWord(stop_word)){
-                    throw invalid_argument("Stop words have special symbols!"s);
-                }
-            }
         }
         
         void AddDocument(int document_id, const string& document, DocumentStatus status,
@@ -126,10 +127,6 @@ class SearchServer {
         template <typename DocumentPredicate>
         vector<Document> FindTopDocuments(const string& raw_query,
                                         DocumentPredicate document_predicate) const {
-            if(!IsValidWord(raw_query)){
-                throw invalid_argument("The request has invalid characters");
-            }
-
             Query query = ParseQuery(raw_query);
             vector<Document> matched_documents = FindAllDocuments(query, document_predicate);
 
@@ -168,10 +165,6 @@ class SearchServer {
         
         tuple<vector<string>, DocumentStatus> MatchDocument(const string& raw_query,
                                                             int document_id) const {
-            if(!IsValidWord(raw_query)){
-                throw invalid_argument("The request has invalid characters");
-            }
-
             Query query = ParseQuery(raw_query);
             vector<string> matched_words;
             
@@ -230,10 +223,7 @@ class SearchServer {
             if (ratings.empty()) {
                 return 0;
             }
-            int rating_sum = 0;
-            for (const int rating : ratings) {
-                rating_sum += rating;
-            }
+            int rating_sum = accumulate(ratings.begin(), ratings.end(), 0);
             return rating_sum / static_cast<int>(ratings.size());
         }
 
@@ -245,8 +235,15 @@ class SearchServer {
 
         QueryWord ParseQueryWord(string text) const {
             bool is_minus = false;
+            if(!IsValidWord(text)){
+                throw invalid_argument("The request has invalid characters");
+            }
+
+            if(!IsValidWord(text) || (text[0] == '-' && text.size() == 1) || (text[0] == '-' && text[1] == '-')){
+                    throw invalid_argument("The query has extra characters before or after the word");
+            }
+
             // Word shouldn't be empty
-            
             if (text[0] == '-') {
                 is_minus = true;
                 text = text.substr(1);
@@ -263,10 +260,6 @@ class SearchServer {
             Query query;
         
             for (const string& word : SplitIntoWords(text)) {
-                if(!IsValidWord(word) || (word[0] == '-' && word.size() == 1) || (word[0] == '-' && word[1] == '-')){
-                    throw invalid_argument("The query has extra characters before or after the word");
-                }
-
                 QueryWord query_word = ParseQueryWord(word);
 
                 if (!query_word.is_stop) {
@@ -339,11 +332,10 @@ void PrintDocument(const Document& document) {
 int main() {
 
     try {
-        SearchServer search_server("и в на"s);
-
         // Checking the constructor for characters in the container
+        string stop_words("и в на"s);
         //set stop_words {"и"s, "в"s, "на"s, "\x12"s};
-        //SearchServer search_server(stop_words);
+        SearchServer search_server(stop_words);
         
         // Checking the constructor for characters in the string
         //SearchServer search_server("и в н\x12а"s);
@@ -380,8 +372,8 @@ int main() {
         //Checking of receipt of a non-existent document ID
         //int ids = search_server.GetDocumentId(5);
 
-        vector<Document> documents_f = search_server.FindTopDocuments("пушистый"s);
-        for (const Document& document : documents_f) {
+        vector<Document> documents = search_server.FindTopDocuments("пушистый"s);
+        for (const Document& document : documents) {
             PrintDocument(document);
         }
 
