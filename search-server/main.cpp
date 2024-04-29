@@ -88,16 +88,10 @@ class SearchServer {
         template <typename StringContainer>
         explicit SearchServer(const StringContainer& stop_words)
             : stop_words_(MakeUniqueNonEmptyStrings(stop_words)) {
-                /*
-                if(any_of(stop_words.begin(), stop_words.end(), !IsValidWord()){
-                    throw invalid_argument("Stop words have special symbols!"s)
-                */
-     
-            for (const string& stop_word : stop_words){
-                if(!IsValidWord(stop_word)){
-                    throw invalid_argument("Stop words have special symbols!"s);
-                }
-            }           
+
+            if(any_of(stop_words.begin(), stop_words.end(), [](const string& word){return !IsValidWord(word);})){
+                throw invalid_argument("Stop words have special symbols!"s);
+            }      
         }
 
         explicit SearchServer(const string& stop_words_text)
