@@ -17,11 +17,15 @@ class SearchServer {
     
     public:   
 
-        // Шаблонный конструктор класса SearchServer
         template <typename StringContainer>
-        explicit SearchServer(const StringContainer& stop_words);
+        explicit SearchServer(const StringContainer& stop_words)
+            : stop_words_(MakeUniqueNonEmptyStrings(stop_words)) {
 
-        // Конструктор класса SearchServer
+            if(std::any_of(stop_words.begin(), stop_words.end(), [](const std::string& word){return !IsValidWord(word);})){
+                throw std::invalid_argument("Stop words have special symbols!");
+            }      
+        }
+
         explicit SearchServer(const std::string& stop_words_text)
             : SearchServer(SplitIntoWords(stop_words_text)){
         }

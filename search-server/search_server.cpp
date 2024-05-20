@@ -1,7 +1,5 @@
 #include "search_server.h"
 
-
-
 // Функция добавления документов
 void SearchServer::AddDocument(int document_id, const std::string& document, DocumentStatus status,
                 const std::vector<int>& ratings) {
