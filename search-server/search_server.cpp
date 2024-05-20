@@ -1,5 +1,9 @@
 #include "search_server.h"
 
+SearchServer::SearchServer(const std::string& stop_words_text)
+    : SearchServer(SplitIntoWords(stop_words_text)){
+}
+
 // Функция добавления документов
 void SearchServer::AddDocument(int document_id, const std::string& document, DocumentStatus status,
                 const std::vector<int>& ratings) {
@@ -71,6 +75,16 @@ std::tuple<std::vector<std::string>, DocumentStatus> SearchServer::MatchDocument
 // Проверка слова, является ли оно стоп-словом
 bool SearchServer::IsStopWord(const std::string& word) const {
     return stop_words_.count(word) > 0;
+}
+
+std::vector<std::string> SearchServer::SplitIntoWordsNoStop(const std::string& text) const {
+    std::vector<std::string> words;
+    for (const std::string& word : SplitIntoWords(text)) {
+        if (!IsStopWord(word)) {
+            words.push_back(word);
+        }
+    }
+    return words;
 }
 
 // Подсчет среднего рейтинга
